@@ -1,0 +1,44 @@
+<DOCTYPE !html>
+<html>
+  <head>
+    <script src="https://goo.gl/W5y95w"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css"/>
+    <link href='https://fonts.googleapis.com/css?family=Hind+Guntur' rel='stylesheet' type='text/css'>
+  </head>
+  <body>
+    <header>
+      <h1>Paint</h1>
+    </header>
+    <main>
+      <span id="tools">
+        <h2>Tools</h2>
+        <ul>
+          <li>Draw</li>
+          <li>Move</li>
+          <li>Rectangle</li>
+        </ul>
+        <div id="colourPicker">
+          <input type="color" id="colour"/>
+        </div>
+      </span>
+      
+      <span id="canvasContainer">
+        <canvas id="display"></canvas>
+      </span>
+      
+      <span id="layers">
+        <h2>Layers</h2>
+        <ul>
+        </ul>
+        <span id="layerTools">
+          <ul>
+            <li>New</li>
+          </ul>
+        </span>
+      </span>
+    </main>
+  </body>
+  
+  <script src="script.js"></script>
+</html>
