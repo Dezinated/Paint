@@ -1,7 +1,7 @@
 var canvasContainer = $("#canvasContainer");
 var colour = $("#colour");
 var display = $("#display");
-var tools = $("#tools ul").find("li");
+var tools = $("#tools");
 
 var layers = [];
 
@@ -16,9 +16,16 @@ var height = 600;
 var selectedLayer = undefined;
 var selectedCanvas = undefined;
 
-var drawing = false;
+var pressed = false;
+var pressedX = 0;
+var pressedY = 0;
 
 
+var size;
+
+var tool;
+
+var lastX, lastY;
 /*
 *
 * INIT
@@ -28,8 +35,15 @@ var drawing = false;
 //Set the default canvas size
 $(document).ready(function(){
   resize($("#display"));
+  $("#brushSize").html($("#slider").val());
+  size = $("#slider").val();
 });
 
+
+$("#slider").mousemove(function() {
+  $("#brushSize").html($(this).val());
+  size = $(this).val();
+});
 //Move mouse on the canvas
 $("#display").mousemove(function(e) {
   updateDisplay(e);
@@ -37,16 +51,27 @@ $("#display").mousemove(function(e) {
 
 //If mouse if unclicked drawing should stop
 $("body").mouseup(function (e) { 
-   drawing = false;
+   pressed = false;
   updateIcon();
+  lastX = undefined;
+  lastY = undefined;
 });
 
 //When mouse is pressed, draw
 canvasContainer.mousedown(function (e) { 
-  drawing = true;
-  draw(e);
+  pressed = true;
+  pressedX = e.pageX;
+  pressedX = e.pageY;
+  if(tool.getAttribute("title") == "Pencil")
+    draw(e);
 });
 
+
+tools.on("click", 'li', function(e) {
+  $(tool).css("background-color","initial");
+  tool = e.target;
+  $(tool).css("background-color","#adadad");
+});
 
 /*
 *
@@ -55,14 +80,18 @@ canvasContainer.mousedown(function (e) {
 */
 
 function draw(e) {
+  if(selectedCanvas === undefined)
+    return;
   var ctx = selectedCanvas.element.getContext("2d");
   var mousePos = getMousePos(selectedCanvas.element,e);
   ctx.fillStyle = colour.val();
-  ctx.fillRect(mousePos.x,mousePos.y,10,10);
+  ctx.fillRect(mousePos.x,mousePos.y,size,size);
  
 }
 
 function updateIcon(){
+  if(selectedCanvas === undefined)
+    return;
   var ctx = selectedCanvas.element.getContext("2d");
 
   var icon = $.grep(layerSelect.children(), function(v) {
@@ -85,20 +114,49 @@ function updateIcon(){
 function updateDisplay(e){
   var mousePos = getMousePos(e.target,e);
   var ctx = display.get(0).getContext("2d"); //Get the first and only result
-  ctx.clearRect(0,0,getSize().x,getSize().y)
+  ctx.clearRect(0,0,getSize().x,getSize().y);
+  ctx.fillStyle = colour.val();
+  //ctx.fillRect(mousePos.x,mousePos.y,size,size);
   
-  if(drawing){
-    if(selectedCanvas === undefined){
-      alert("Select a layer");
-      drawing = false;
-      return;
-    }
-    draw(e);
+  if(pressed && selectedCanvas === undefined){
+    alert("Select a layer");
+    pressed = false;
     return;
   }
-  ctx.fillStyle = colour.val();
-  ctx.fillRect(mousePos.x,mousePos.y,10,10);
+    
+  if(tool == undefined)
+    return;
+  
+  switch (tool.getAttribute("title")) {
+      
+      case "Pencil":
+        if(pressed) 
+          draw(e);
+        ctx.fillRect(mousePos.x,mousePos.y,size,size);
+        break;
+      
+      case "Move":
+        var currentCTX = selectedCanvas.element.getContext("2d");
+        if(pressed){
+          if(lastX == undefined || lastY == undefined){
+            lastX = e.pageX;
+            lastY = e.pageY;
+          }
+          var dx = lastX - e.pageX;
+          var dy = lastY - e.pageY;
+          lastX = e.pageX;
+          lastY = e.pageY;
+          currentCTX.save();
+          var img = currentCTX.getImageData(0,0,getSize().x,getSize().y);
+          currentCTX.clearRect(0,0,getSize().x,getSize().y);
+          currentCTX.putImageData(img, -Math.round(dx), -Math.round(dy));
+          currentCTX.restore();
+        }
+        break;
+  }
+  
 }
+  
 
 /*
 *
@@ -116,10 +174,6 @@ var Layer  = function(){
     this.element.height = getSize().y;
     this.element.setAttribute("id",this.id);
 };
-
-Layer.prototype.print = function() { 
-  return this.element + ":"+ canvasContainer;
-}
 
 layerSelect.on("click", 'li', function(e) {
   if(selectedLayer !== undefined)
@@ -166,7 +220,7 @@ function handleDragStop() {
 */
 
 layerTools.click(function(e) {
-  switch($(e.target).html()){
+  switch(e.target.getAttribute("title")){
     case "New":
       layerCount++;
       //console.log("new layer "+layerCount);
